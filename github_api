@@ -1,0 +1,24 @@
+import requests
+import re
+import os
+
+# Filter the urls of the pull requests and store into list.
+URL_REGEX = re.compile('https.+github.+')
+
+url_list = []
+
+with open('pull_requests', 'rb') as f:
+    for line in f:
+        line = line.strip()
+        if URL_REGEX.match(line):
+            url_list.append(line)
+
+print (url_list)
+
+# Interacting with Github API by making get requests from the urls.
+
+git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
+
+for url in url_list:
+    r = requests.get(url, headers=git_headers).json()
+    print (r)
