@@ -1,24 +1,65 @@
+import pandas as pd
+from datetime import datetime
+from collections import Counter
 import requests
 import re
 import os
 
-# Filter the urls of the pull requests and store into list.
 URL_REGEX = re.compile('https.+github.+')
-
-url_list = []
-
-with open('pull_requests', 'rb') as f:
-    for line in f:
-        line = line.strip()
-        if URL_REGEX.match(line):
-            url_list.append(line)
-
-print (url_list)
-
-# Interacting with Github API by making get requests from the urls.
 
 git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
 
-for url in url_list:
-    r = requests.get(url, headers=git_headers).json()
-    print (r)
+# Filter the urls of the pull requests and store into list.
+def get_url_list():
+    url_list = []
+
+    with open('pull_requests', 'rb') as f:
+        for line in f:
+            line = line.strip()
+            if URL_REGEX.match(line):
+                url_list.append(line)
+
+    return url_list
+
+# Interacting with Github API by making get requests from the urls.
+
+def get_commit_time_series(url):
+    # for url in url_list:
+    files_url = url + "/files"
+    commits_url = url + "/commits?500"
+
+    r_commits = requests.get(commits_url, headers=git_headers).json()
+    r_files = requests.get(files_url, headers=git_headers).json()
+
+    commiters = []
+    commit_time = []
+    num_files_changed = len(r_files)
+
+    for c in r_commits:
+        commiters.append(c["author"]["login"])
+        commit_time.append(c["commit"]["author"]["date"])
+
+    num_commits = len(r_commits)
+    commiters = set(commiters)
+
+    for i in range(0, len(commit_time)):
+        commit_time[i] = datetime.strptime(commit_time[i][:10], "%Y-%m-%d")
+
+    dict_hash = Counter(commit_time)
+    date_list = pd.date_range('2016-11-9', periods=35, freq='D')
+
+    for i in date_list:
+        i = i.to_pydatetime()
+        if i in dict_hash.keys():
+            continue
+        else:
+            dict_hash[i] = 0
+
+    dict_hash = collections.OrderedDict(sorted(dict_hash.items()))
+
+    print commit_time
+    # print num_files_changed
+    # print commiters
+    # print commit_time
+
+get_commit_time_series(get_url_list()[0])

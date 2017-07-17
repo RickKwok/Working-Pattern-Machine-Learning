@@ -4,15 +4,46 @@ import collections
 import math
 import matplotlib.pyplot as plt
 import random
+import re
+import requests
 from datetime import datetime
 from collections import Counter
-import tensorflow as tf
+
+URL_REGEX = re.compile('https.+github.+')
+
+git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
 
 
-def read_series(filename):
-    data = pd.read_csv("./commits_data/" + filename)
-    # commiters = data['commit.author.name']
-    date = data['commit.author.date']
+# Filter the urls of the pull requests and store into list.
+
+def get_url_list():
+    url_list = []
+
+    with open('pull_requests', 'rb') as f:
+        for line in f:
+            line = line.strip()
+            if URL_REGEX.match(line):
+                url_list.append(line)
+
+    return url_list
+
+
+# Interacting with Github API by making get requests from the urls.
+
+def read_series(url):
+    files_url = url + "/files"
+    commits_url = url + "/commits?500"
+    commiters = []
+    date = []
+
+    r_commits = requests.get(commits_url, headers=git_headers).json()
+    r_files = requests.get(files_url, headers=git_headers).json()
+
+    num_files_changed = len(r_files)
+
+    for c in r_commits:
+        commiters.append(c["author"]["login"])
+        date.append(c["commit"]["author"]["date"])
 
     for i in range(0, len(date)):
         date[i] = datetime.strptime(date[i][:10], "%Y-%m-%d")
@@ -20,6 +51,8 @@ def read_series(filename):
     dict_hash = Counter(date)
     # base = datetime(2016, 11, 9)
     # end = datetime(2016, 12, 16)
+
+    # Stretch the timeframe into project period/ 35 days.
     date_list = pd.date_range('2016-11-9', periods=35, freq='D')
 
     for i in date_list:
@@ -29,7 +62,12 @@ def read_series(filename):
         else:
             dict_hash[i] = 0
 
+    # sort {date : num_commits} hash into ascending date order.
+
     dict_hash = collections.OrderedDict(sorted(dict_hash.items()))
+
+    # plot {x : date, y : num_commits} using Matplot.
+
     # x = dict_hash.keys()
     # y = dict_hash.values()
     # print(x)
@@ -41,15 +79,11 @@ def read_series(filename):
     # plt.ylabel("Number of commits")
     # plt.grid(True)
     # plt.show()
+
     return dict_hash.values()
 
 
-def get_all_commits():
-    path = "./commits_data/"
-    commit_list = os.listdir(path)[1:]
-    print(commit_list)
-    return commit_list
-
+# Calculate similarity between two time series. Using Dynamic Time Wrapping.
 
 def dtw_distance(s1, s2, w):
     DTW = {}
@@ -67,6 +101,8 @@ def dtw_distance(s1, s2, w):
 
     return math.sqrt(DTW[len(s1) - 1, len(s2) - 1])
 
+
+# Using LB_Keogh to Optimize DTW efficiency.
 
 def LB_Keogh(s1, s2, r):
     LB_sum = 0
@@ -115,7 +151,11 @@ def k_means_clust(data, num_clust, num_iter, w=5):
     return centroids
 
 
-commit_list = get_all_commits()
-s1 = read_series(commit_list[0])
-s2 = read_series(commit_list[10])
+url_list = get_url_list()
+s1 = read_series(url_list[0])
+s2 = read_series(url_list[10])
+
+# print read_series(get_url_list()[0])
+
 print(dtw_distance(s1, s2, 5))
+# store distance matrix into csv
