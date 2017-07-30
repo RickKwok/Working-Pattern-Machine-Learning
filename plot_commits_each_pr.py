@@ -1,16 +1,18 @@
 import pandas as pd
-import sys, os
+import sys, os, csv
 import collections
 import math
 import matplotlib.pyplot as plt
 import random
 import re
 import requests
+import numpy as np
 from datetime import datetime
 from collections import Counter
+import progressbar
 
 URL_REGEX = re.compile('https.+github.+')
-
+DTW_WIDTH = 5
 git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
 
 
@@ -33,6 +35,7 @@ def get_url_list():
 def read_series(url):
     files_url = url + "/files"
     commits_url = url + "/commits?500"
+
     commiters = []
     date = []
 
@@ -40,10 +43,13 @@ def read_series(url):
     r_files = requests.get(files_url, headers=git_headers).json()
 
     num_files_changed = len(r_files)
-
     for c in r_commits:
-        commiters.append(c["author"]["login"])
-        date.append(c["commit"]["author"]["date"])
+        # commiters.append(c["author"]["login"])
+        try:
+            date.append(c["commit"]["author"]["date"])
+        except TypeError:
+            print ("url: " + c + ", has problem.")
+            continue
 
     for i in range(0, len(date)):
         date[i] = datetime.strptime(date[i][:10], "%Y-%m-%d")
@@ -108,8 +114,8 @@ def LB_Keogh(s1, s2, r):
     LB_sum = 0
     for ind, i in enumerate(s1):
 
-        lower_bound = math.min(s2[(ind - r if ind - r >= 0 else 0):(ind + r)])
-        upper_bound = math.max(s2[(ind - r if ind - r >= 0 else 0):(ind + r)])
+        lower_bound = min(s2[(ind - r if ind - r >= 0 else 0):(ind + r)])
+        upper_bound = max(s2[(ind - r if ind - r >= 0 else 0):(ind + r)])
 
         if i > upper_bound:
             LB_sum = LB_sum + (i - upper_bound) ** 2
@@ -152,10 +158,66 @@ def k_means_clust(data, num_clust, num_iter, w=5):
 
 
 url_list = get_url_list()
-s1 = read_series(url_list[0])
-s2 = read_series(url_list[10])
 
+# print dtw_distance(read_series(url_list[0]), read_series(url_list[1]), 5)
+
+All_Series = []
+Distance_Matrix = []
+
+# Calculating Distance Matrix.
+
+for i in range(0, len(url_list)):
+    tmp = []
+    s1 = read_series(url_list[i])
+    for j in range(0, len(url_list)):
+        if j > i:
+            s2 = read_series(url_list[j])
+            tmp.append(dtw_distance(s1, s2, DTW_WIDTH))
+            print dtw_distance(s1, s2, DTW_WIDTH),
+        else:
+            tmp.append(0)
+            print 0,
+    with open("output.csv", "wb") as f:
+        writer = csv.writer(f)
+        writer.writerows(tmp)
+    Distance_Matrix.append(tmp)
+    print "\n"
+    # print "one row finished."
+
+# a = [[1,2,3], [2,3,4]]
+
+# with open("output.csv", "wb") as f:
+#     writer = csv.writer(f)
+#     writer.writerows(Distance_Matrix)
+
+# for i in range(len(All_Series)-1):
+#     tmp = []
+#     for j in range(i+1, len(All_Series)):
+#         tmp.append(dtw_distance(All_Series[i], All_Series[j], DTW_WIDTH))
+#     print tmp
+#     Distance_Matrix.append(tmp)
+
+
+# s1 = read_series(url_list[0])
+# s2 = read_series(url_list[10])
+#
 # print read_series(get_url_list()[0])
+# print(dtw_distance(s1, s2, DTW_WIDTH))
 
-print(dtw_distance(s1, s2, 5))
 # store distance matrix into csv
+
+
+def get_distance_matrix(url_list):
+    D_Matrix = []
+    for i in range(0, len(url_list) - 1):
+        s1 = read_series(url_list[i])
+        tmp_Distance = []
+
+        for j in range(i + 1, len(url_list)):
+            s2 = read_series(url_list[j])
+            tmp_Distance.append(dtw_distance(s1, s2, DTW_WIDTH))
+
+        D_Matrix.append(tmp_Distance)
+
+    tri_upper_diag = np.triu(D_Matrix, k=0)
+    print tri_upper_diag
