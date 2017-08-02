@@ -9,7 +9,7 @@ import requests
 import numpy as np
 from datetime import datetime
 from collections import Counter
-import progressbar
+from sklearn.cluster import KMeans
 
 URL_REGEX = re.compile('https.+github.+')
 DTW_WIDTH = 5
@@ -196,3 +196,16 @@ All_Series = []
 #     # Distance_Matrix.append(tmp)
 #     print "\n"
 
+# with open('dist_matrix.csv') as f:
+#     reader = csv.reader(f)
+#     for row in reader:
+#         Distance_Matrix.append(row)
+
+with open('all_series.csv') as f:
+    reader = csv.reader(f)
+    for row in reader:
+        All_Series.append(row[:20])
+
+kmeans = KMeans(n_clusters=2, random_state=0).fit(All_Series)
+
+print kmeans.labels_
