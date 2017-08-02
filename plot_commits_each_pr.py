@@ -102,7 +102,7 @@ def dtw_distance(s1, s2, w):
 
     for i in range(len(s1)):
         for j in range(max(0, i - w), min(len(s2), i + w)):
-            dist = (s1[i] - s2[j]) ** 2
+            dist = (int(s1[i]) - int(s2[j])) ** 2
             DTW[(i, j)] = dist + min(DTW[(i - 1, j)], DTW[(i, j - 1)], DTW[(i - 1, j - 1)])
 
     return math.sqrt(DTW[len(s1) - 1, len(s2) - 1])
@@ -157,67 +157,42 @@ def k_means_clust(data, num_clust, num_iter, w=5):
     return centroids
 
 
-url_list = get_url_list()
+# url_list = get_url_list()
+# writer = csv.writer(open("all_series.csv", "wb"))
+#
+# for i in url_list:
+#     tmp = read_series(i)
+#     writer.writerow(tmp)
 
 # print dtw_distance(read_series(url_list[0]), read_series(url_list[1]), 5)
 
-All_Series = []
 Distance_Matrix = []
+All_Series = []
 
 # Calculating Distance Matrix.
 
-for i in range(0, len(url_list)):
-    tmp = []
-    s1 = read_series(url_list[i])
-    for j in range(0, len(url_list)):
-        if j > i:
-            s2 = read_series(url_list[j])
-            tmp.append(dtw_distance(s1, s2, DTW_WIDTH))
-            print dtw_distance(s1, s2, DTW_WIDTH),
-        else:
-            tmp.append(0)
-            print 0,
-    with open("output.csv", "wb") as f:
-        writer = csv.writer(f)
-        writer.writerows(tmp)
-    Distance_Matrix.append(tmp)
-    print "\n"
-    # print "one row finished."
-
-# a = [[1,2,3], [2,3,4]]
-
-# with open("output.csv", "wb") as f:
-#     writer = csv.writer(f)
-#     writer.writerows(Distance_Matrix)
-
-# for i in range(len(All_Series)-1):
-#     tmp = []
-#     for j in range(i+1, len(All_Series)):
-#         tmp.append(dtw_distance(All_Series[i], All_Series[j], DTW_WIDTH))
-#     print tmp
-#     Distance_Matrix.append(tmp)
-
-
-# s1 = read_series(url_list[0])
-# s2 = read_series(url_list[10])
+# writer = csv.writer(open("dist_matrix.csv", "wb"))
 #
-# print read_series(get_url_list()[0])
-# print(dtw_distance(s1, s2, DTW_WIDTH))
+# with open('all_series.csv') as f:
+#     reader = csv.reader(f)
+#     for row in reader:
+#         All_Series.append(row)
+#
+# # print dtw_distance(All_Series[0], All_Series[1], 5)
+#
+# for i in range(0, len(All_Series)):
+#     s1 = All_Series[i][:20]
+#     tmp = []
+#     for j in range(0, len(All_Series)):
+#         dist = 0
+#
+#         if i < j:
+#             s2 = All_Series[j][:20]
+#             dist = dtw_distance(s1, s2, DTW_WIDTH)
+#
+#         print dist,
+#         tmp.append(dist)
+#     writer.writerow(tmp)
+#     # Distance_Matrix.append(tmp)
+#     print "\n"
 
-# store distance matrix into csv
-
-
-def get_distance_matrix(url_list):
-    D_Matrix = []
-    for i in range(0, len(url_list) - 1):
-        s1 = read_series(url_list[i])
-        tmp_Distance = []
-
-        for j in range(i + 1, len(url_list)):
-            s2 = read_series(url_list[j])
-            tmp_Distance.append(dtw_distance(s1, s2, DTW_WIDTH))
-
-        D_Matrix.append(tmp_Distance)
-
-    tri_upper_diag = np.triu(D_Matrix, k=0)
-    print tri_upper_diag
