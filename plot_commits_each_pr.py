@@ -204,8 +204,13 @@ All_Series = []
 with open('all_series.csv') as f:
     reader = csv.reader(f)
     for row in reader:
-        All_Series.append(row[:20])
+        All_Series.append(list(map(int, row[:20])))
 
-kmeans = KMeans(n_clusters=2, random_state=0).fit(All_Series)
+print All_Series
 
-print kmeans.labels_
+kmeans = KMeans(n_clusters=5, random_state=0).fit(All_Series)
+
+
+
+print "**********************"
+print kmeans.cluster_centers_
