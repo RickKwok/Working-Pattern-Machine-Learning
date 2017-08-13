@@ -201,16 +201,15 @@ All_Series = []
 #     for row in reader:
 #         Distance_Matrix.append(row)
 
-with open('all_series.csv') as f:
-    reader = csv.reader(f)
-    for row in reader:
-        All_Series.append(list(map(int, row[:20])))
 
-print All_Series
+def get_temporal_label(pattern, num_clusters):
+    with open('all_series.csv') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            All_Series.append(list(map(int, row[:20])))
 
-kmeans = KMeans(n_clusters=5, random_state=0).fit(All_Series)
+    # print All_Series
 
+    kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(All_Series)
 
-
-print "**********************"
-print kmeans.cluster_centers_
+    return kmeans.predict(pattern)
