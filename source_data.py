@@ -2,10 +2,12 @@ import xlrd
 import csv
 import sys
 import os
+import re
 from plot_commits_each_pr import dtw_distance
 from plot_commits_each_pr import read_series
 from sklearn.cluster import KMeans
 
+# Global Variable
 All_Series = []
 
 Pattern_Classes = []
@@ -13,6 +15,9 @@ Pattern_Classes = []
 DTW_WIDTH = 5
 
 git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
+
+ROOT_URL = 'https://api.github.com/repos/expertiza/expertiza/pulls/'
+
 
 # read from Excel sheet and return matrix.
 def read_sheet(sheet_name):
@@ -79,52 +84,63 @@ def get_all_series(num_clusters):
     Pattern_Classes = km.cluster_centers_
 
 
-get_all_series(3)
-print Pattern_Classes
+# get_all_series(3)
+# print Pattern_Classes
 
 
 # convert the the field of Github link into Integer representing number of class.
 def get_series_label(git_link):
-    # URL_REGEX = re.compile('https.+github.+')
-    try:
-        pattern = read_series(git_link)[:20]
+    URL_REGEX = re.compile('https.+github.+')
+    if URL_REGEX.match(git_link):
+        num = 0
+        for x in git_link.split('/'):
+            if x.isdigit():
+                num = x
+        link = ROOT_URL + num
+        pattern = read_series(link)[:20]
+
         dist = sys.maxint
         label = -1
-        # km = KMeans(n_clusters=num_clusters, random_state=0).fit(All_Series)
-        for index in range(len(Pattern_Classes)):
-            tmp_dist = dtw_distance(Pattern_Classes[index], pattern, DTW_WIDTH)
+
+        for center in Pattern_Classes:
+            tmp_dist = dtw_distance(center, pattern, DTW_WIDTH)
             if tmp_dist < dist:
-                dist = tmp
-                label = index
+                dist = tmp_dist
+                label += 1
         return label
-    except ValueError:
-        print "Problem is " + git_link
+    else:
         return -1
 
 
-all_projects = get_all_labeled(read_sheet("Workbook1.xlsx"))
+# all_projects = get_all_labeled(read_sheet("Workbook1.xlsx"))
 
-matrix = []
+# print all_projects
 
-row = all_projects[0][7:]
+# matrix = []
 
-print all_projects[0][7:]
-
-print type(row[0])
-print read_series("https://github.com/expertiza/expertiza/pull/778")
-#get_all_series(3)
-
-# for i in range(len(all_projects)):
-#     row = all_projects[i][7:]
-#     tmp = []
-#     for j in range(len(row)):
-#         if 0 < j < 4:
-#             continue
-#         else:
-#             if j == 0:
-#                 tmp.append(get_series_label(row[j]))
-#             else:
-#                 tmp.append(row[j])
-#     matrix.append(tmp)
+# row = all_projects[11][7:]
 #
-# print matrix
+# print row
+
+
+def get_vector_for_regression():
+    writer = csv.writer(open("PR_vectors.csv", "wb"))
+
+    for i in range(len(all_projects)):
+        row = all_projects[i][7:]
+        tmp = []
+        for j in range(len(row)):
+            if 0 < j < 4:
+                continue
+            else:
+                if j == 0:
+                    tmp.append(get_series_label(row[j]))
+                else:
+                    tmp.append(row[j])
+        print tmp
+        writer.writerow(tmp)
+        # matrix.append(tmp)
+
+
+# get_all_series(3)
+
