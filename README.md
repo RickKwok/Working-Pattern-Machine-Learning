@@ -1,11 +1,13 @@
 ## Early Detection on Students Failing Projects.
 
 ###Overview
+
 This project runs an machine learning approach for early detection based on 289 course projects based on 
 an Open Source System project done by graduate students 
 in a 500-level computer science course in past five years.
 
 ###Files and Data Source
+
 The script _*plot_commits_each_pr.py*_ contains helper methods,
 such as interacting with GITHUB api to get the working patterns
 and convert into arrays (here I took the first 20 days of the whole 35 periods)
