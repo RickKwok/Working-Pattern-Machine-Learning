@@ -19,6 +19,19 @@ git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
 ROOT_URL = 'https://api.github.com/repos/expertiza/expertiza/pulls/'
 
 
+# Initialization. Get all first 20 days of working temporal patterns. Need to run beforehand to set the global variable
+# "Pattern Classes".
+def get_all_series(num_clusters):
+    with open('all_series.csv') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            All_Series.append(list(map(int, row[:20])))
+
+    km = KMeans(n_clusters=num_clusters, random_state=0).fit(All_Series)
+    global Pattern_Classes
+    Pattern_Classes = km.cluster_centers_
+
+
 # read from Excel sheet and return matrix.
 def read_sheet(sheet_name):
     wkb = xlrd.open_workbook(sheet_name)
@@ -72,23 +85,8 @@ def get_all_labeled(_matrix):
     return data
 
 
-# Initialization. Get all first 20 days of working temporal patterns.
-def get_all_series(num_clusters):
-    with open('all_series.csv') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            All_Series.append(list(map(int, row[:20])))
-
-    km = KMeans(n_clusters=num_clusters, random_state=0).fit(All_Series)
-    global Pattern_Classes
-    Pattern_Classes = km.cluster_centers_
-
-
-# get_all_series(3)
-# print Pattern_Classes
-
-
 # convert the the field of Github link into Integer representing number of class.
+# 0th column of the training data matrix (PR_vectors.csv).
 def get_series_label(git_link):
     URL_REGEX = re.compile('https.+github.+')
     if URL_REGEX.match(git_link):
@@ -109,38 +107,28 @@ def get_series_label(git_link):
                 label += 1
         return label
     else:
+        print 'Not Github url.'
         return -1
 
 
-# all_projects = get_all_labeled(read_sheet("Workbook1.xlsx"))
-
-# print all_projects
-
-# matrix = []
-
-# row = all_projects[11][7:]
-#
-# print row
-
-
-def get_vector_for_regression():
-    writer = csv.writer(open("PR_vectors.csv", "wb"))
-
-    for i in range(len(all_projects)):
+# Process the read in excel sheet and convert the GITHUB link to a temporal class label.
+# And write to "PR_vectors.csv". Need to call "get_all_labeled" before this to append label to the end of each row.
+def get_vector_for_regression(all_projects):
+    writer = csv.writer(open("PR_vectors.csv", "a"))
+    git_url_regex = re.compile('https.+github.+')
+    for i in range(119, len(all_projects)):
         row = all_projects[i][7:]
-        tmp = []
-        for j in range(len(row)):
-            if 0 < j < 4:
-                continue
-            else:
-                if j == 0:
-                    tmp.append(get_series_label(row[j]))
-                else:
-                    tmp.append(row[j])
-        print tmp
-        writer.writerow(tmp)
-        # matrix.append(tmp)
-
+        if git_url_regex.match(row[0]):
+            link = get_series_label(row[0])
+            tmp = [link, row[4], row[5], row[6]]
+            print tmp
+            writer.writerow(tmp)
+        else:
+            continue
 
 # get_all_series(3)
-
+# projects = read_sheet("Workbook1.xlsx")
+# print get_all_labeled(projects)
+# get_vector_for_regression(get_all_labeled(projects))
+# print type(get_all_labeled(projects)[0][7])
+# print read_series('https://api.github.com/repos/expertiza/expertiza/pulls/388')

@@ -14,13 +14,13 @@ from sklearn.cluster import KMeans
 URL_REGEX = re.compile('https.+github.+')
 DTW_WIDTH = 5
 git_headers = {'Authorization': 'token %s' % os.environ['GITHUB']}
+ROOT_URL = 'https://api.github.com/repos/expertiza/expertiza/pulls/'
 
 
 # Filter the urls of the pull requests and store into list.
 
 def get_url_list():
     url_list = []
-
     with open('pull_requests', 'rb') as f:
         for line in f:
             line = line.strip()
@@ -31,20 +31,16 @@ def get_url_list():
 
 
 # Interacting with Github API by making get requests from the urls.
-
 def read_series(url):
-    files_url = url + "/files"
+    # files_url = url + "/files"
     commits_url = url + "/commits?500"
 
-    commiters = []
     date = []
 
     r_commits = requests.get(commits_url, headers=git_headers).json()
-    r_files = requests.get(files_url, headers=git_headers).json()
+    # r_files = requests.get(files_url, headers=git_headers).json()
 
-    num_files_changed = len(r_files)
     for c in r_commits:
-        # commiters.append(c["author"]["login"])
         try:
             date.append(c["commit"]["author"]["date"])
         except TypeError:
@@ -71,22 +67,20 @@ def read_series(url):
     # sort {date : num_commits} hash into ascending date order.
 
     dict_hash = collections.OrderedDict(sorted(dict_hash.items()))
-
-    # plot {x : date, y : num_commits} using Matplot.
-
-    # x = dict_hash.keys()
-    # y = dict_hash.values()
-    # print(x)
-    # print(y)
-    # could change to plt.plot_data() if want threads
-    # plt.scatter(x, y)
-    # plt.plot(x, y)
-    # plt.title("Commits change on PR_" + sys.argv[1])
-    # plt.ylabel("Number of commits")
-    # plt.grid(True)
-    # plt.show()
-
     return dict_hash.values()
+
+
+# A "Git PR link" ---> Return # of files have changed.
+def read_num_files_changed(git_link):
+    num = 0
+    for x in git_link.split('/'):
+        if x.isdigit():
+            num = x
+    link = ROOT_URL + num
+    files_url = link + "/files"
+    r_files = requests.get(files_url, headers=git_headers).json()
+    num_files_changed = len(r_files)
+    return num_files_changed
 
 
 # Calculate similarity between two time series. Using Dynamic Time Wrapping.
@@ -124,95 +118,34 @@ def LB_Keogh(s1, s2, r):
 
     return math.sqrt(LB_sum)
 
-
-def k_means_clust(data, num_clust, num_iter, w=5):
-    centroids = random.sample(data, num_clust)
-    counter = 0
-    for n in range(num_iter):
-        counter += 1
-        print(counter)
-        assignments = {}
-        # assign data points to clusters
-        for ind, i in enumerate(data):
-            min_dist = float('inf')
-            closest_clust = None
-            for c_ind, j in enumerate(centroids):
-                if LB_Keogh(i, j, 5) < min_dist:
-                    cur_dist = dtw_distance(i, j, w)
-                    if cur_dist < min_dist:
-                        min_dist = cur_dist
-                        closest_clust = c_ind
-            if closest_clust in assignments:
-                assignments[closest_clust].append(ind)
-            else:
-                assignments[closest_clust] = []
-
-        # recalculate centroids of clusters
-        for key in assignments:
-            clust_sum = 0
-            for k in assignments[key]:
-                clust_sum = clust_sum + data[k]
-            centroids[key] = [m / len(assignments[key]) for m in clust_sum]
-
-    return centroids
-
-
-# url_list = get_url_list()
-# writer = csv.writer(open("all_series.csv", "wb"))
+# k_means clustering
+# def k_means_clust(data, num_clust, num_iter, w=5):
+#     centroids = random.sample(data, num_clust)
+#     counter = 0
+#     for n in range(num_iter):
+#         counter += 1
+#         print(counter)
+#         assignments = {}
+#         # assign data points to clusters
+#         for ind, i in enumerate(data):
+#             min_dist = float('inf')
+#             closest_clust = None
+#             for c_ind, j in enumerate(centroids):
+#                 if LB_Keogh(i, j, 5) < min_dist:
+#                     cur_dist = dtw_distance(i, j, w)
+#                     if cur_dist < min_dist:
+#                         min_dist = cur_dist
+#                         closest_clust = c_ind
+#             if closest_clust in assignments:
+#                 assignments[closest_clust].append(ind)
+#             else:
+#                 assignments[closest_clust] = []
 #
-# for i in url_list:
-#     tmp = read_series(i)
-#     writer.writerow(tmp)
-
-# print dtw_distance(read_series(url_list[0]), read_series(url_list[1]), 5)
-
-Distance_Matrix = []
-All_Series = []
-
-# Calculating Distance Matrix.
-
-# writer = csv.writer(open("dist_matrix.csv", "wb"))
+#         # recalculate centroids of clusters
+#         for key in assignments:
+#             clust_sum = 0
+#             for k in assignments[key]:
+#                 clust_sum = clust_sum + data[k]
+#             centroids[key] = [m / len(assignments[key]) for m in clust_sum]
 #
-# with open('all_series.csv') as f:
-#     reader = csv.reader(f)
-#     for row in reader:
-#         All_Series.append(row)
-#
-# # print dtw_distance(All_Series[0], All_Series[1], 5)
-#
-# for i in range(0, len(All_Series)):
-#     s1 = All_Series[i][:20]
-#     tmp = []
-#     for j in range(0, len(All_Series)):
-#         dist = 0
-#
-#         if i < j:
-#             s2 = All_Series[j][:20]
-#             dist = dtw_distance(s1, s2, DTW_WIDTH)
-#
-#         print dist,
-#         tmp.append(dist)
-#     writer.writerow(tmp)
-#     # Distance_Matrix.append(tmp)
-#     print "\n"
-
-# with open('dist_matrix.csv') as f:
-#     reader = csv.reader(f)
-#     for row in reader:
-#         Distance_Matrix.append(row)
-
-# print read_series("https://api.github.com/repos/expertiza/expertiza/pulls/236")[:20]
-
-with open('all_series.csv') as f:
-    reader = csv.reader(f)
-    for row in reader:
-        All_Series.append(list(map(int, row[:20])))
-
-        # print All_Series
-
-kmeans = KMeans(n_clusters=3, random_state=0).fit(All_Series)
-
-centroids = kmeans.cluster_centers_
-
-for center in centroids:
-    print dtw_distance(center, All_Series[0], 5)
+#     return centroids
