@@ -44,7 +44,7 @@ def parse_to_api_link(pr_link):
     git_link = ROOT_URL + num
     return git_link
 
-
+# Inter
 def get_test_data(test_projects):
     writer = csv.writer(open("test_data.csv", "wb"))
     test_data = []
