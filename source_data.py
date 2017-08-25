@@ -33,9 +33,9 @@ def get_all_series(num_clusters):
 
 
 # read from Excel sheet and return matrix.
-def read_sheet(sheet_name):
+def read_sheet(sheet_name, sheet_number):
     wkb = xlrd.open_workbook(sheet_name)
-    sheet = wkb.sheet_by_index(0)
+    sheet = wkb.sheet_by_index(sheet_number)
 
     _matrix = []
 
@@ -126,9 +126,29 @@ def get_vector_for_regression(all_projects):
         else:
             continue
 
+
 # get_all_series(3)
-# projects = read_sheet("Workbook1.xlsx")
+# print Pattern_Classes
+
+# projects = read_sheet("Workbook1.xlsx", 1)
+# print len(projects)
+# print projects
+#
+# writer = csv.writer(open("new_train_set_3_series_types", "wb"))
+# for row in projects:
+#     series_label = get_series_label(row[1])
+#     if row[3] == '':
+#         label = 0
+#     if row[3] == 'P':
+#         label = 1
+#     else:
+#         label = 2
+#     tmp = [series_label, row[4], row[5], label]
+#     writer.writerow(tmp)
+#     print tmp
+
 # print get_all_labeled(projects)
 # get_vector_for_regression(get_all_labeled(projects))
 # print type(get_all_labeled(projects)[0][7])
 # print read_series('https://api.github.com/repos/expertiza/expertiza/pulls/388')
+

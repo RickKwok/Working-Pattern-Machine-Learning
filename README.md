@@ -1,7 +1,7 @@
 ## Early Detection on Students Failing Projects.
 
 ###Overview
-
+`_****_`
 This project runs an machine learning approach for early detection based on 289 course projects based on 
 an Open Source System project done by graduate students 
 in a 500-level computer science course in past five years.
@@ -22,3 +22,11 @@ And convert the Github PR link into times series cluster labels(here I predefine
 The file _*multinominol_regression.py*_ contains Interfaces to extract the feature parts and label parts from both
 training set (*PR_vectors.csv*) and testing set(*test_data.csv*). And trained multinomial logistic regression model
 Then tested with last semesters' projects. 
+
+
+include FALL 2014 projects from so on. Or Spring 2015.
+Shuffle training set.
+Use 3 labels.
+raise a discussion to run regression on single features and several features combined.
+
+
